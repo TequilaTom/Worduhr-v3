@@ -42,6 +42,8 @@ uint16_t NTP_port = 123;  // Standartport für den NTP Server
 #include <Wire.h>
 #include <RTClib.h>
 
+#include <arduino_homekit_server.h>
+
 #include "Uhr.h"
 #include "WebPage_Adapter.h"
 #include "EEPROMAnything.h"
@@ -78,10 +80,73 @@ RTC_DS3231 RTC;
 RTC_Type RTC;
 #endif
 
+extern "C" homekit_server_config_t config;
+extern "C" homekit_characteristic_t name;
+extern "C" void led_toggle();
+extern "C" void accessory_init();
+extern "C" int led_bri;
+extern "C" bool led_power;
+extern "C" bool isLedUpdateAvailable;
+extern "C" float led_hue;
+extern "C" float led_saturation;
+
 #include "font.h"
 #include "uhr_func.hpp"
 #include "wifi_func.hpp"
 #include "openwmap.h"
+
+//------------------------------------------------------------------------------
+
+void homekit_setup()
+{
+	uint8_t mac[WL_MAC_ADDR_LENGTH];
+	WiFi.macAddress(mac);
+	int name_len = snprintf(nullptr, 0, "%s_%02X%02X%02X", name.value.string_value, mac[3], mac[4], mac[5]);
+	char *name_value = (char *) malloc(name_len + 1);
+	snprintf(name_value, name_len + 1, "%s_%02X%02X%02X", name.value.string_value, mac[3], mac[4], mac[5]);
+	name.value = HOMEKIT_STRING_CPP(name_value);
+
+	arduino_homekit_setup(&config);
+}
+
+//------------------------------------------------------------------------------
+
+void homekit_loop()
+{
+
+	if (isLedUpdateAvailable)
+	{
+		Serial.print("Hue = ");
+		Serial.println(led_hue);
+		Serial.print("Brightness = ");
+		Serial.println(led_bri);
+		Serial.print("Saturation = ");
+		Serial.println(led_saturation);
+
+		if (led_power)
+		{
+			uint8_t c[4];
+			hsv_to_rgb(led_hue, led_saturation, (float) led_bri, c);
+			G.rgb[0][0] = c[0];
+			G.rgb[0][1] = c[1];
+			G.rgb[0][2] = c[2];
+			G.rgb[0][3] = c[3];
+		}
+		else
+		{
+			led_clear();
+		}
+		isLedUpdateAvailable = false;
+	}
+
+
+	arduino_homekit_loop();
+	uint32_t time = millis();
+	if (last_minute != _minute)
+	{
+		INFO("heap: %d, sockets: %d", ESP.getFreeHeap(), arduino_homekit_connected_clients_count());
+	}
+}
 
 //------------------------------------------------------------------------------
 
@@ -323,6 +388,7 @@ void setup(){
 	httpServer.begin();
 	//-------------------------------------
 
+	homekit_setup();
 
 	//-------------------------------------
 	// Start Websocket
@@ -975,4 +1041,6 @@ void loop(){
 	}
 
 	if (count_delay > 10000) { count_delay = 0; }
+
+	homekit_loop();
 }
