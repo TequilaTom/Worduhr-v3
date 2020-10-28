@@ -78,8 +78,8 @@ void led_bri_set(homekit_value_t value)
 	isLedUpdateAvailable = true;
 }
 
-homekit_characteristic_t name = HOMEKIT_CHARACTERISTIC_(NAME, "SK6812");
-homekit_characteristic_t serial_number = HOMEKIT_CHARACTERISTIC_(SERIAL_NUMBER, "SN_2222");
+homekit_characteristic_t name = HOMEKIT_CHARACTERISTIC_(NAME, "Wortuhr");
+homekit_characteristic_t serial_number = HOMEKIT_CHARACTERISTIC_(SERIAL_NUMBER, "2.5.0");
 homekit_characteristic_t led_on = HOMEKIT_CHARACTERISTIC_(ON, false, .getter=led_on_get, .setter=led_on_set);
 
 void led_toggle()
@@ -116,7 +116,10 @@ homekit_accessory_t *accessories[] = {HOMEKIT_ACCESSORY(.id = 1, .category = hom
 		.characteristics=(homekit_characteristic_t*[]){
 			HOMEKIT_CHARACTERISTIC(NAME, "Wortuhr"),
 					&led_on,
-					HOMEKIT_CHARACTERISTIC(BRIGHTNESS, 100, .getter=light_bri_get, .setter=led_bri_set),
+			HOMEKIT_CHARACTERISTIC(BRIGHTNESS, 100,
+					.getter=light_bri_get,
+			.setter=led_bri_set
+			),
 			HOMEKIT_CHARACTERISTIC(
 					HUE, 0,
 					.getter = led_hue_get,

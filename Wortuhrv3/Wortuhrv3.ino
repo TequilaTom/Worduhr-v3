@@ -388,6 +388,7 @@ void setup(){
 	httpServer.begin();
 	//-------------------------------------
 
+	led_power = true;
 	homekit_setup();
 
 	//-------------------------------------
